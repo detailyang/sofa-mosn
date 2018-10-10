@@ -1,6 +1,6 @@
-## 一、SOFA-Mesh 的结构
+## 一、SOFAMesh 的结构
 
-SOFA-Mesh 基于 [Istio](https://istio.io) 上定制，将其数据平面（Data Panel）从 Envoy 替换为蚂蚁自研的 [SOFA-Mosn](https://github.com/alipay/sofa-mosn)，下面是一张 SOFA-Mesh 各部件的关系图
+SOFAMesh 基于 [Istio](https://istio.io) 上定制，将其数据平面（Data Panel）从 Envoy 替换为蚂蚁自研的 [SOFAMosn](https://github.com/alipay/sofa-mosn)，下面是一张 SOFAMesh 各部件的关系图
 
 <div align=center><img src="../design/resource/MOSNIntroduction.png" width = "450" height = "400" /></div>
 
@@ -63,16 +63,16 @@ Helm 是一个 k8s 的包管理工具，安装参考 [https://docs.helm.sh/using
 $ brew install kubernetes-helm
 ```
 
-## 三、源码方式部署 SOFA-Mesh
+## 三、源码方式部署 SOFAMesh
 
-* ### <a name="l3lqgh"></a>1. 下载 SOFA-Mesh 源码
+* ### <a name="l3lqgh"></a>1. 下载 SOFAMesh 源码
 
 ```bash
 $ git clone git@github.com:alipay/sofa-mesh.git
 $ cd sofa-mesh
 ```
 
-* ### <a name="4pzudw"></a>2. 通过 Helm 安装 SOFA-Mesh
+* ### <a name="4pzudw"></a>2. 通过 Helm 安装 SOFAMesh
 
 ```bash
 $ kubectl apply -f install/kubernetes/helm/helm-service-account.yaml
@@ -105,7 +105,7 @@ istio-citadel-6579c78cd9-w57lr              1/1     Running   0          5m
 istio-egressgateway-7649f76df4-zs8kw        1/1     Running   0          5m
 istio-galley-c77876cb6-nhczq                1/1     Running   0          5m
 istio-ingressgateway-5c9c8565d9-d972t       1/1     Running   0          5m
-istio-pilot-7485f9fb4b-xsvtm                0/1     Running   0          5m
+istio-pilot-7485f9fb4b-xsvtm                1/1     Running   0          5m
 istio-policy-5766bc84b9-p2wfj               1/1     Running   0          5m
 istio-sidecar-injector-7f5f586bc7-2sdx6     1/1     Running   0          5m
 istio-statsd-prom-bridge-7f44bb5ddb-stcf6   1/1     Running   0          5m
