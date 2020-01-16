@@ -25,7 +25,7 @@ import (
 	"time"
 
 	"github.com/rcrowley/go-metrics"
-	"mosn.io/mosn/pkg/api/v2"
+	v2 "mosn.io/mosn/pkg/api/v2"
 )
 
 //
@@ -359,7 +359,9 @@ type ConnectionHandler interface {
 	// AddOrUpdateListener
 	// adds a listener into the ConnectionHandler or
 	// update a listener
-	AddOrUpdateListener(lc *v2.Listener, networkFiltersFactories []NetworkFilterChainFactory,
+	AddOrUpdateListener(lc *v2.Listener,
+		listenerFiltersFactories []ListenerFilterChainFactory,
+		networkFiltersFactories []NetworkFilterChainFactory,
 		streamFiltersFactories []StreamFilterChainFactory) (ListenerEventListener, error)
 
 	//StartListeners starts all listeners the ConnectionHandler has

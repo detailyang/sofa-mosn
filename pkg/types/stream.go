@@ -19,6 +19,7 @@ package types
 
 import (
 	"context"
+	"net"
 )
 
 //
@@ -310,6 +311,11 @@ type StreamReceiverFilterHandler interface {
 	SetRequestTrailers(trailers HeaderMap)
 
 	SetConvert(on bool)
+}
+
+// ListenerFilterChainFactory adds filter into callbacks
+type ListenerFilterChainFactory interface {
+	OnConn(context context.Context, conn net.Conn) (stoped bool, err error)
 }
 
 // StreamFilterChainFactory adds filter into callbacks

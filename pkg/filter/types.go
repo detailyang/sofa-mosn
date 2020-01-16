@@ -22,6 +22,9 @@ import (
 )
 
 // StreamFilterFactoryCreator creates a StreamFilterChainFactory according to config
+type ListenerFilterFactoryCreator func(config map[string]interface{}) (types.ListenerFilterChainFactory, error)
+
+// StreamFilterFactoryCreator creates a StreamFilterChainFactory according to config
 type StreamFilterFactoryCreator func(config map[string]interface{}) (types.StreamFilterChainFactory, error)
 
 // NetworkFilterFactoryCreator creates a NetworkFilterChainFactory according to config

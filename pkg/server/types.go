@@ -20,7 +20,7 @@ package server
 import (
 	"time"
 
-	"mosn.io/mosn/pkg/api/v2"
+	v2 "mosn.io/mosn/pkg/api/v2"
 	"mosn.io/mosn/pkg/log"
 	"mosn.io/mosn/pkg/types"
 )
@@ -36,7 +36,9 @@ type Config struct {
 }
 
 type Server interface {
-	AddListener(lc *v2.Listener, networkFiltersFactories []types.NetworkFilterChainFactory,
+	AddListener(lc *v2.Listener,
+		listenerFiltersFactories []types.ListenerFilterChainFactory,
+		networkFiltersFactories []types.NetworkFilterChainFactory,
 		streamFiltersFactories []types.StreamFilterChainFactory) (types.ListenerEventListener, error)
 
 	Start()

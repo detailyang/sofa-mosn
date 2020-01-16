@@ -22,7 +22,7 @@ import (
 
 	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	jsoniter "github.com/json-iterator/go"
-	"mosn.io/mosn/pkg/api/v2"
+	v2 "mosn.io/mosn/pkg/api/v2"
 	"mosn.io/mosn/pkg/config"
 	"mosn.io/mosn/pkg/log"
 	"mosn.io/mosn/pkg/router"
@@ -63,6 +63,7 @@ func ConvertAddOrUpdateListeners(listeners []*envoy_api_v2.Listener) {
 			continue
 		}
 
+		var listenerFilters []types.ListenerFilterChainFactory
 		var streamFilters []types.StreamFilterChainFactory
 		var networkFilters []types.NetworkFilterChainFactory
 
@@ -77,6 +78,8 @@ func ConvertAddOrUpdateListeners(listeners []*envoy_api_v2.Listener) {
 				log.DefaultLogger.Errorf("xds client update listener error: proxy needed in network filters")
 				continue
 			}
+
+			listenerFilters = config.GetListenerFilters(mosnListener.ListenerFilters)
 		}
 
 		listenerAdapter := server.GetListenerAdapterInstance()
@@ -88,7 +91,7 @@ func ConvertAddOrUpdateListeners(listeners []*envoy_api_v2.Listener) {
 		log.DefaultLogger.Debugf("listenerAdapter.AddOrUpdateListener called, with mosn Listener:%+v, networkFilters:%+v, streamFilters: %+v",
 			mosnListener, networkFilters, streamFilters)
 
-		if err := listenerAdapter.AddOrUpdateListener("", mosnListener, networkFilters, streamFilters); err == nil {
+		if err := listenerAdapter.AddOrUpdateListener("", mosnListener, listenerFilters, networkFilters, streamFilters); err == nil {
 			log.DefaultLogger.Debugf("xds AddOrUpdateListener success,listener address = %s", mosnListener.Addr.String())
 		} else {
 			log.DefaultLogger.Errorf("xds AddOrUpdateListener failure,listener address = %s, msg = %s ",

@@ -23,7 +23,7 @@ import (
 
 	admin "mosn.io/mosn/pkg/admin/server"
 	"mosn.io/mosn/pkg/admin/store"
-	"mosn.io/mosn/pkg/api/v2"
+	v2 "mosn.io/mosn/pkg/api/v2"
 	"mosn.io/mosn/pkg/config"
 	_ "mosn.io/mosn/pkg/filter/network/connectionmanager"
 	"mosn.io/mosn/pkg/log"
@@ -163,6 +163,7 @@ func NewMosn(c *config.MOSNConfig) *Mosn {
 					m.routerManager.AddOrUpdateRouters(routerConfig)
 				}
 
+				var lfcf []types.ListenerFilterChainFactory
 				var nfcf []types.NetworkFilterChainFactory
 				var sfcf []types.StreamFilterChainFactory
 
@@ -170,11 +171,12 @@ func NewMosn(c *config.MOSNConfig) *Mosn {
 				// network filters
 				if !lc.UseOriginalDst {
 					// network and stream filters
+					lfcf = config.GetListenerFilters(lc.ListenerFilters)
 					nfcf = config.GetNetworkFilters(&lc.FilterChains[0])
 					sfcf = config.GetStreamFilters(lc.StreamFilters)
 				}
 
-				_, err := srv.AddListener(lc, nfcf, sfcf)
+				_, err := srv.AddListener(lc, lfcf, nfcf, sfcf)
 				if err != nil {
 					log.StartLogger.Fatalf("[mosn] [NewMosn] AddListener error:%s", err.Error())
 				}

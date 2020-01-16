@@ -23,12 +23,19 @@ import (
 	"mosn.io/mosn/pkg/types"
 )
 
+var creatorListenerFactory map[string]ListenerFilterFactoryCreator
 var creatorStreamFactory map[string]StreamFilterFactoryCreator
 var creatorNetworkFactory map[string]NetworkFilterFactoryCreator
 
 func init() {
+	creatorListenerFactory = make(map[string]ListenerFilterFactoryCreator)
 	creatorStreamFactory = make(map[string]StreamFilterFactoryCreator)
 	creatorNetworkFactory = make(map[string]NetworkFilterFactoryCreator)
+}
+
+// RegisterStream registers the filterType as StreamFilterFactoryCreator
+func RegisterListener(filterType string, creator ListenerFilterFactoryCreator) {
+	creatorListenerFactory[filterType] = creator
 }
 
 // RegisterStream registers the filterType as StreamFilterFactoryCreator
@@ -39,6 +46,17 @@ func RegisterStream(filterType string, creator StreamFilterFactoryCreator) {
 // RegisterNetwork registers the filterType as  NetworkFilterFactoryCreator
 func RegisterNetwork(filterType string, creator NetworkFilterFactoryCreator) {
 	creatorNetworkFactory[filterType] = creator
+}
+
+func CreateListenerFilterChainFactory(filterType string, config map[string]interface{}) (types.ListenerFilterChainFactory, error) {
+	if cf, ok := creatorListenerFactory[filterType]; ok {
+		sfcf, err := cf(config)
+		if err != nil {
+			return nil, fmt.Errorf("create listener filter chain factory failed: %v", err)
+		}
+		return sfcf, nil
+	}
+	return nil, fmt.Errorf("unsupported listener filter type: %v", filterType)
 }
 
 // CreateStreamFilterChainFactory creates a StreamFilterChainFactory according to filterType

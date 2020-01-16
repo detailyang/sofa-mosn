@@ -381,3 +381,18 @@ func GetNetworkFilters(c *v2.FilterChain) []types.NetworkFilterChainFactory {
 	}
 	return factories
 }
+
+func GetListenerFilters(configs []v2.Filter) []types.ListenerFilterChainFactory {
+	var factories []types.ListenerFilterChainFactory
+
+	for _, c := range configs {
+		sfcc, err := filter.CreateListenerFilterChainFactory(c.Type, c.Config)
+		if err != nil {
+			log.DefaultLogger.Errorf("[config] get stream filter failed, type: %s, error: %v", c.Type, err)
+			continue
+		}
+		factories = append(factories, sfcc)
+	}
+
+	return factories
+}

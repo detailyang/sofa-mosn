@@ -33,7 +33,7 @@ import (
 
 	"golang.org/x/sys/unix"
 	admin "mosn.io/mosn/pkg/admin/store"
-	"mosn.io/mosn/pkg/api/v2"
+	v2 "mosn.io/mosn/pkg/api/v2"
 	mosnctx "mosn.io/mosn/pkg/context"
 	"mosn.io/mosn/pkg/filter/accept/originaldst"
 	"mosn.io/mosn/pkg/log"
@@ -95,7 +95,8 @@ func (ch *connHandler) NumConnections() uint64 {
 // AddOrUpdateListener used to add or update listener
 // listener name is unique key to represent the listener
 // and listener with the same name must have the same configured address
-func (ch *connHandler) AddOrUpdateListener(lc *v2.Listener, networkFiltersFactories []types.NetworkFilterChainFactory,
+func (ch *connHandler) AddOrUpdateListener(lc *v2.Listener, listenerFiltersFactories []types.ListenerFilterChainFactory,
+	networkFiltersFactories []types.NetworkFilterChainFactory,
 	streamFiltersFactories []types.StreamFilterChainFactory) (types.ListenerEventListener, error) {
 
 	var listenerName string
@@ -133,6 +134,12 @@ func (ch *connHandler) AddOrUpdateListener(lc *v2.Listener, networkFiltersFactor
 			log.DefaultLogger.Infof("[server] [AddOrUpdateListener] [update] update stream filters")
 			al.streamFiltersFactoriesStore.Store(streamFiltersFactories)
 			rawConfig.StreamFilters = lc.StreamFilters
+		}
+
+		if listenerFiltersFactories != nil {
+			log.DefaultLogger.Infof("[server] [AddOrUpdateListener] [update] update listener filters")
+			al.listenerFiltersFactoriesStore.Store(listenerFiltersFactories)
+			rawConfig.ListenerFilters = lc.ListenerFilters
 		}
 
 		// tls update only take effects on new connections
@@ -188,7 +195,7 @@ func (ch *connHandler) AddOrUpdateListener(lc *v2.Listener, networkFiltersFactor
 		l := network.NewListener(lc)
 
 		var err error
-		al, err = newActiveListener(l, lc, als, networkFiltersFactories, streamFiltersFactories, ch, listenerStopChan)
+		al, err = newActiveListener(l, lc, als, listenerFiltersFactories, networkFiltersFactories, streamFiltersFactories, ch, listenerStopChan)
 		if err != nil {
 			return al, err
 		}
@@ -325,36 +332,39 @@ func (ch *connHandler) StopConnection() {
 
 // ListenerEventListener
 type activeListener struct {
-	listener                    types.Listener
-	networkFiltersFactories     []types.NetworkFilterChainFactory
-	streamFiltersFactoriesStore atomic.Value // store []types.StreamFilterChainFactory
-	listenIP                    string
-	listenPort                  int
-	conns                       *list.List
-	connsMux                    sync.RWMutex
-	handler                     *connHandler
-	stopChan                    chan struct{}
-	stats                       *listenerStats
-	accessLogs                  []types.AccessLog
-	updatedLabel                bool
-	idleTimeout                 *v2.DurationConfig
-	tlsMng                      types.TLSContextManager
+	listener                      types.Listener
+	networkFiltersFactories       []types.NetworkFilterChainFactory
+	streamFiltersFactoriesStore   atomic.Value // store []types.StreamFilterChainFactory
+	listenerFiltersFactoriesStore atomic.Value
+	listenIP                      string
+	listenPort                    int
+	conns                         *list.List
+	connsMux                      sync.RWMutex
+	handler                       *connHandler
+	stopChan                      chan struct{}
+	stats                         *listenerStats
+	accessLogs                    []types.AccessLog
+	updatedLabel                  bool
+	idleTimeout                   *v2.DurationConfig
+	tlsMng                        types.TLSContextManager
 }
 
 func newActiveListener(listener types.Listener, lc *v2.Listener, accessLoggers []types.AccessLog,
+	listenerFiltersFactories []types.ListenerFilterChainFactory,
 	networkFiltersFactories []types.NetworkFilterChainFactory, streamFiltersFactories []types.StreamFilterChainFactory,
 	handler *connHandler, stopChan chan struct{}) (*activeListener, error) {
 	al := &activeListener{
 		listener:                listener,
 		networkFiltersFactories: networkFiltersFactories,
-		conns:        list.New(),
-		handler:      handler,
-		stopChan:     stopChan,
-		accessLogs:   accessLoggers,
-		updatedLabel: false,
-		idleTimeout:  lc.ConnectionIdleTimeout,
+		conns:                   list.New(),
+		handler:                 handler,
+		stopChan:                stopChan,
+		accessLogs:              accessLoggers,
+		updatedLabel:            false,
+		idleTimeout:             lc.ConnectionIdleTimeout,
 	}
 	al.streamFiltersFactoriesStore.Store(streamFiltersFactories)
+	al.listenerFiltersFactoriesStore.Store(listenerFiltersFactories)
 
 	listenPort := 0
 	var listenIP string
@@ -442,6 +452,22 @@ func (al *activeListener) OnAccept(rawc net.Conn, useOriginalDst bool, oriRemote
 	}
 	if oriRemoteAddr != nil {
 		ctx = mosnctx.WithValue(ctx, types.ContextOriRemoteAddr, oriRemoteAddr)
+	}
+
+	lf := al.listenerFiltersFactoriesStore.Load()
+	if lf != nil {
+		if lfs, ok := lf.([]types.ListenerFilterChainFactory); ok {
+			for i := range lfs {
+				ok, err := lfs[i].OnConn(ctx, rawc)
+				if err != nil {
+					log.DefaultLogger.Errorf("[server] [listener] listener filter error:%+v", err)
+					return
+				}
+				if ok { // stop
+					return
+				}
+			}
+		}
 	}
 
 	arc.ContinueFilterChain(ctx, true)
