@@ -24,6 +24,7 @@ type ContextKey int
 const (
 	ContextKeyStreamID ContextKey = iota
 	ContextKeyConnectionID
+	ContextKeyConnection
 	ContextKeyListenerPort
 	ContextKeyListenerName
 	ContextKeyListenerType
